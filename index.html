@@ -3,24 +3,25 @@
 <html lang="az">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Cars in Khudat</title>
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:#101114;color:white;font-family:Arial,sans-serif}
-header{background:#191a20;padding:22px 15px;text-align:center}
+header{background:#191a20;padding:22px 12px;text-align:center}
 header h1{color:#ff3939;margin:0}
 header p{color:#bbb}
 .container{padding:15px;max-width:900px;margin:auto}
 input,select,button{width:100%;padding:13px;margin:6px 0;border:0;border-radius:7px;font-size:16px}
+input,select{background:#fff;color:#111}
 button{background:#ff3939;color:white;font-weight:bold;cursor:pointer}
-h2{margin-top:25px}
 .cars{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
 .card{background:#202127;border-radius:10px;overflow:hidden;padding-bottom:12px}
-.card img{width:100%;height:165px;object-fit:cover}
-.card h3,.card p{margin:10px}
+.card img{width:100%;height:180px;object-fit:cover}
+.card h3,.card p{margin:10px;overflow-wrap:anywhere}
 .price{color:#ff5050;font-weight:bold}
 form{background:#202127;padding:15px;border-radius:10px}
+#preview{display:none;width:100%;max-height:250px;object-fit:contain;margin-top:10px}
 footer{text-align:center;padding:25px;color:#aaa}
 </style>
 </head>
@@ -34,9 +35,9 @@ footer{text-align:center;padding:25px;color:#aaa}
 <input id="search" placeholder="Marka və model axtar..." oninput="showCars()">
 <select id="filter" onchange="showCars()">
 <option value="">Bütün maşınlar</option>
-<option>Mercedes-Benz</option>
-<option>BMW</option>
-<option>VAZ</option>
+<option value="Mercedes">Mercedes-Benz</option>
+<option value="BMW">BMW</option>
+<option value="VAZ">VAZ</option>
 </select>
 
 <h2>🚗 Maşın elanları</h2>
@@ -45,10 +46,14 @@ footer{text-align:center;padding:25px;color:#aaa}
 <h2>➕ Elan əlavə et</h2>
 <form id="form">
 <input id="brand" placeholder="Marka və model" required>
-<input id="year" type="number" placeholder="Buraxılış ili" required>
-<input id="price" type="number" placeholder="Qiymət (AZN)" required>
+<input id="year" type="number" placeholder="Buraxılış ili" min="1950" max="2027" required>
+<input id="price" type="number" placeholder="Qiymət (AZN)" min="1" required>
 <input id="phone" type="tel" placeholder="Telefon nömrəsi" required>
-<input id="photo" type="url" placeholder="Maşının şəklinin linki">
+
+<label for="photo">📸 Maşının şəklini telefondan seç:</label>
+<input id="photo" type="file" accept="image/*">
+<img id="preview" alt="Seçilmiş maşın şəkli">
+
 <button type="submit">Elanı yerləşdir</button>
 </form>
 </div>
@@ -56,36 +61,113 @@ footer{text-align:center;padding:25px;color:#aaa}
 <footer>© 2026 Cars in Khudat</footer>
 
 <script>
-let cars=JSON.parse(localStorage.getItem("carsKhudat")||"[]");
+let cars=[];
+try {
+  cars=JSON.parse(localStorage.getItem("carsKhudat")||"[]");
+  if(!Array.isArray(cars)) cars=[];
+} catch(e) { cars=[]; }
 
-function showCars(){
-let s=document.getElementById("search").value.toLowerCase();
-let f=document.getElementById("filter").value;
-let list=cars.filter(c=>c.brand.toLowerCase().includes(s)&&(!f||c.brand.includes(f)));
-document.getElementById("cars").innerHTML=list.map(c=>`
-<div class="card">
-<img src="${c.photo||'https://placehold.co/600x400/202127/ffffff?text=Masin'}" alt="Maşın">
-<h3>${c.brand}</h3>
-<p>Buraxılış ili: ${c.year}</p>
-<p class="price">${c.price} AZN</p>
-<p>Telefon: ${c.phone}</p>
-</div>`).join("")||"<p>Hələ elan yoxdur. İlk elanı sən əlavə et!</p>";
+function safe(s){
+  return String(s??"").replace(/[&<>"']/g,c=>({
+    "&":"&amp;","<":"&lt;",">":"&gt;",
+    '"':"&quot;","'":"&#39;"
+  })[c]);
 }
 
-document.getElementById("form").addEventListener("submit",function(e){
-e.preventDefault();
-cars.unshift({
-brand:document.getElementById("brand").value,
-year:document.getElementById("year").value,
-price:document.getElementById("price").value,
-phone:document.getElementById("phone").value,
-photo:document.getElementById("photo").value
+const photoInput=document.getElementById("photo");
+const preview=document.getElementById("preview");
+
+photoInput.addEventListener("change",function(){
+  const file=this.files[0];
+  if(!file){preview.style.display="none";return;}
+  if(!file.type.startsWith("image/")){
+    alert("Zəhmət olmasa şəkil seç!");
+    this.value="";
+    return;
+  }
+  const reader=new FileReader();
+  reader.onload=()=>{
+    preview.src=reader.result;
+    preview.style.display="block";
+  };
+  reader.readAsDataURL(file);
 });
-localStorage.setItem("carsKhudat",JSON.stringify(cars));
-this.reset();
-showCars();
-alert("Elan əlavə edildi!");
+
+function compressImage(file){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onerror=()=>reject(new Error("Şəkil oxunmadı"));
+    reader.onload=()=>{
+      const img=new Image();
+      img.onerror=()=>reject(new Error("Şəkil açıla bilmədi"));
+      img.onload=()=>{
+        const scale=Math.min(1,1000/img.width,800/img.height);
+        const canvas=document.createElement("canvas");
+        canvas.width=Math.round(img.width*scale);
+        canvas.height=Math.round(img.height*scale);
+        canvas.getContext("2d").drawImage(img,0,0,canvas.width,canvas.height);
+        resolve(canvas.toDataURL("image/jpeg",0.7));
+      };
+      img.src=reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function showCars(){
+  const s=document.getElementById("search").value.toLowerCase();
+  const f=document.getElementById("filter").value.toLowerCase();
+  const list=cars.filter(c=>
+    c.brand.toLowerCase().includes(s)&&
+    (!f||c.brand.toLowerCase().includes(f))
+  );
+  document.getElementById("cars").innerHTML=list.map(c=>`
+    <div class="card">
+      <img src="${c.photo||'https://placehold.co/600x400/202127/ffffff?text=Masin'}" alt="Maşın şəkli">
+      <h3>${safe(c.brand)}</h3>
+      <p>Buraxılış ili: ${safe(c.year)}</p>
+      <p class="price">${safe(c.price)} AZN</p>
+      <p>Telefon: ${safe(c.phone)}</p>
+    </div>
+  `).join("")||"<p>Hələ elan yoxdur. İlk elanı sən əlavə et!</p>";
+}
+
+document.getElementById("form").addEventListener("submit",async function(e){
+  e.preventDefault();
+  const btn=this.querySelector("button");
+  btn.disabled=true;
+  btn.textContent="Elan hazırlanır...";
+
+  try{
+    const file=photoInput.files[0];
+    const photo=file?await compressImage(file):"";
+    const item={
+      brand:document.getElementById("brand").value.trim(),
+      year:document.getElementById("year").value,
+      price:document.getElementById("price").value,
+      phone:document.getElementById("phone").value.trim(),
+      photo
+    };
+    const updated=[item,...cars];
+    try{
+      localStorage.setItem("carsKhudat",JSON.stringify(updated));
+    }catch(err){
+      alert("Yaddaş doludur. Daha kiçik şəkil seç və ya köhnə elanları azalt.");
+      return;
+    }
+    cars=updated;
+    this.reset();
+    preview.style.display="none";
+    showCars();
+    alert("Elan və şəkil əlavə olundu!");
+  }catch(err){
+    alert("Şəkli yükləmək mümkün olmadı. Başqa şəkil yoxla.");
+  }finally{
+    btn.disabled=false;
+    btn.textContent="Elanı yerləşdir";
+  }
 });
+
 showCars();
 </script>
 </body>
