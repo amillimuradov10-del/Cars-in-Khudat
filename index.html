@@ -6,44 +6,86 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Cars in Khudat</title>
 <style>
-body{margin:0;background:#111;color:white;font-family:Arial}
-header{background:#e63946;padding:24px;text-align:center}
-h1{margin:0}
-main{padding:20px}
-input,select{width:100%;padding:13px;margin:8px 0;box-sizing:border-box;border-radius:8px;border:0}
-.car{background:#222;padding:16px;margin:15px 0;border-radius:12px}
-.price{color:#ff5252;font-size:22px;font-weight:bold}
+*{box-sizing:border-box}
+body{margin:0;background:#101114;color:white;font-family:Arial,sans-serif}
+header{background:#191a20;padding:22px 15px;text-align:center}
+header h1{color:#ff3939;margin:0}
+header p{color:#bbb}
+.container{padding:15px;max-width:900px;margin:auto}
+input,select,button{width:100%;padding:13px;margin:6px 0;border:0;border-radius:7px;font-size:16px}
+button{background:#ff3939;color:white;font-weight:bold;cursor:pointer}
+h2{margin-top:25px}
+.cars{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
+.card{background:#202127;border-radius:10px;overflow:hidden;padding-bottom:12px}
+.card img{width:100%;height:165px;object-fit:cover}
+.card h3,.card p{margin:10px}
+.price{color:#ff5050;font-weight:bold}
+form{background:#202127;padding:15px;border-radius:10px}
+footer{text-align:center;padding:25px;color:#aaa}
 </style>
 </head>
 <body>
 <header>
-<h1>🚘 Cars in Khudat</h1>
-<p>Xaçmaz • Xudat • Maşın elanları</p>
+<h1>🚘 CARS IN KHUDAT</h1>
+<p>Maşın al və sat — Xudatda!</p>
 </header>
-<main>
-<input id="search" placeholder="Marka axtar: Mercedes, BMW...">
-<select id="sort">
-<option value="all">Bütün qiymətlər</option>
-<option value="5000">5000 AZN-ə qədər</option>
-<option value="10000">10000 AZN-ə qədər</option>
+
+<div class="container">
+<input id="search" placeholder="Marka və model axtar..." oninput="showCars()">
+<select id="filter" onchange="showCars()">
+<option value="">Bütün maşınlar</option>
+<option>Mercedes-Benz</option>
+<option>BMW</option>
+<option>VAZ</option>
 </select>
-<div id="cars"></div>
-</main>
+
+<h2>🚗 Maşın elanları</h2>
+<div class="cars" id="cars"></div>
+
+<h2>➕ Elan əlavə et</h2>
+<form id="form">
+<input id="brand" placeholder="Marka və model" required>
+<input id="year" type="number" placeholder="Buraxılış ili" required>
+<input id="price" type="number" placeholder="Qiymət (AZN)" required>
+<input id="phone" type="tel" placeholder="Telefon nömrəsi" required>
+<input id="photo" type="url" placeholder="Maşının şəklinin linki">
+<button type="submit">Elanı yerləşdir</button>
+</form>
+</div>
+
+<footer>© 2026 Cars in Khudat</footer>
+
 <script>
-let cars=[
-{brand:"Mercedes-Benz C200",year:1995,price:6500},
-{brand:"BMW E34",year:1993,price:7500},
-{brand:"VAZ 2107",year:2006,price:3500}
-];
+let cars=JSON.parse(localStorage.getItem("carsKhudat")||"[]");
+
 function showCars(){
 let s=document.getElementById("search").value.toLowerCase();
-let p=document.getElementById("sort").value;
-document.getElementById("cars").innerHTML=cars.filter(c=>
-c.brand.toLowerCase().includes(s)&&(p==="all"||c.price<=Number(p))
-).map(c=>`<div class="car"><h2>${c.brand}</h2><p>Buraxılış ili: ${c.year}</p><div class="price">${c.price} AZN</div></div>`).join("");
+let f=document.getElementById("filter").value;
+let list=cars.filter(c=>c.brand.toLowerCase().includes(s)&&(!f||c.brand.includes(f)));
+document.getElementById("cars").innerHTML=list.map(c=>`
+<div class="card">
+<img src="${c.photo||'https://placehold.co/600x400/202127/ffffff?text=Masin'}" alt="Maşın">
+<h3>${c.brand}</h3>
+<p>Buraxılış ili: ${c.year}</p>
+<p class="price">${c.price} AZN</p>
+<p>Telefon: ${c.phone}</p>
+</div>`).join("")||"<p>Hələ elan yoxdur. İlk elanı sən əlavə et!</p>";
 }
-document.getElementById("search").oninput=showCars;
-document.getElementById("sort").onchange=showCars;
+
+document.getElementById("form").addEventListener("submit",function(e){
+e.preventDefault();
+cars.unshift({
+brand:document.getElementById("brand").value,
+year:document.getElementById("year").value,
+price:document.getElementById("price").value,
+phone:document.getElementById("phone").value,
+photo:document.getElementById("photo").value
+});
+localStorage.setItem("carsKhudat",JSON.stringify(cars));
+this.reset();
+showCars();
+alert("Elan əlavə edildi!");
+});
 showCars();
 </script>
 </body>
