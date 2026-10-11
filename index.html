@@ -169,6 +169,37 @@ document.getElementById("form").addEventListener("submit",async function(e){
 });
 
 showCars();
+
+const SUPABASE_URL = ";import { createClient } from '@supabase/supabase-js'
+const supabaseUrl = 'https://mvqqjdgylnbllhzfoxrv.supabase.co'
+const supabaseKey = process.env.SUPABASE_KEY
+const supabase = createClient(supabaseUrl, supabaseKey)
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im12cXFqZGd5bG5ibGxoemZveHJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE3MzkyNDgsImV4cCI6MjEwNzMxNTI0OH0.ZqB1OiTA8EQJXf1paxq45WQqxtRZtkV30-Atbh74ghE;
+
+async function testSupabase() {
+  try {
+    const response = await fetch(
+      `${SUPABASE_URL}/rest/v1/car_ads?select=id&limit=1`,
+      {
+        headers: {
+          apikey: SUPABASE_KEY,
+          Authorization: `Bearer ${SUPABASE_KEY}`
+        }
+      }
+    );
+
+    if (response.ok) {
+      console.log("Supabase bağlantısı uğurludur!");
+    } else {
+      console.log("Xəta kodu:", response.status);
+    }
+  } catch (error) {
+    console.log("Bağlantı alınmadı:", error);
+  }
+}
+
+testSupabase();
+
 </script>
 </body>
 </html>
