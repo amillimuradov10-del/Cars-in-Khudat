@@ -1,0 +1,50 @@
+
+<!DOCTYPE html>
+<html lang="az">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cars in Khudat</title>
+<style>
+body{margin:0;background:#111;color:white;font-family:Arial}
+header{background:#e63946;padding:24px;text-align:center}
+h1{margin:0}
+main{padding:20px}
+input,select{width:100%;padding:13px;margin:8px 0;box-sizing:border-box;border-radius:8px;border:0}
+.car{background:#222;padding:16px;margin:15px 0;border-radius:12px}
+.price{color:#ff5252;font-size:22px;font-weight:bold}
+</style>
+</head>
+<body>
+<header>
+<h1>🚘 Cars in Khudat</h1>
+<p>Xaçmaz • Xudat • Maşın elanları</p>
+</header>
+<main>
+<input id="search" placeholder="Marka axtar: Mercedes, BMW...">
+<select id="sort">
+<option value="all">Bütün qiymətlər</option>
+<option value="5000">5000 AZN-ə qədər</option>
+<option value="10000">10000 AZN-ə qədər</option>
+</select>
+<div id="cars"></div>
+</main>
+<script>
+let cars=[
+{brand:"Mercedes-Benz C200",year:1995,price:6500},
+{brand:"BMW E34",year:1993,price:7500},
+{brand:"VAZ 2107",year:2006,price:3500}
+];
+function showCars(){
+let s=document.getElementById("search").value.toLowerCase();
+let p=document.getElementById("sort").value;
+document.getElementById("cars").innerHTML=cars.filter(c=>
+c.brand.toLowerCase().includes(s)&&(p==="all"||c.price<=Number(p))
+).map(c=>`<div class="car"><h2>${c.brand}</h2><p>Buraxılış ili: ${c.year}</p><div class="price">${c.price} AZN</div></div>`).join("");
+}
+document.getElementById("search").oninput=showCars;
+document.getElementById("sort").onchange=showCars;
+showCars();
+</script>
+</body>
+</html>
